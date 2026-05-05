@@ -37,6 +37,11 @@ export class PokemonScene extends Phaser.Scene {
     this.lastSavedPos = { x: 0, y: 0 };
     this.grassTiles = [];
     this.waterTiles = [];
+    // Animation de marche
+    this._walkTime = 0;
+    this._walkDir = 1; // 1=droite, -1=gauche
+    this._isMoving = false;
+    this._grassParticles = [];
   }
 
   init() {}
@@ -361,51 +366,69 @@ export class PokemonScene extends Phaser.Scene {
     this.lastSavedPos = { x: startX, y: startY };
   }
 
-  _drawTrainer(gfx, isSelf) {
+  _drawTrainer(gfx, isSelf, walkPhase = 0, dir = 1) {
     gfx.clear();
     const body  = isSelf ? 0xff4444 : 0x4488ff;
     const hat   = isSelf ? 0xcc0000 : 0x0033aa;
     const pants = isSelf ? 0x4466cc : 0x1155bb;
-    // Ombre
-    gfx.fillStyle(0x000000, 0.25);
-    gfx.fillEllipse(0, 20, 16, 5);
-    // Jambes
+    const bob   = Math.sin(walkPhase) * 2; // oscillation verticale
+    const legSwing = Math.sin(walkPhase) * 4; // amplitude jambes
+    const armSwing = Math.sin(walkPhase) * 3;
+    const flip = dir < 0 ? -1 : 1; // retournement horizontal
+
+    // Ombre (aplatie quand on bouge)
+    gfx.fillStyle(0x000000, 0.2);
+    gfx.fillEllipse(0, 22 + bob, 18, 5);
+
+    // Jambe arrière
+    gfx.fillStyle(Phaser.Display.Color.IntegerToColor(pants).darken(20).color, 1);
+    gfx.fillRect(flip * 2,  7 + bob, 5, 10 + legSwing);
+    // Chaussure arrière
+    gfx.fillStyle(0x111111, 1);
+    gfx.fillRect(flip * 1, 16 + bob + legSwing, 7, 4);
+
+    // Jambe avant
     gfx.fillStyle(pants, 1);
-    gfx.fillRect(-7, 7, 5, 10);
-    gfx.fillRect(2,  7, 5, 10);
-    // Chaussures
-    gfx.fillStyle(0x222222, 1);
-    gfx.fillRect(-8, 15, 7, 4);
-    gfx.fillRect(1,  15, 7, 4);
+    gfx.fillRect(flip * -7, 7 + bob, 5, 10 - legSwing);
+    // Chaussure avant
+    gfx.fillStyle(0x333333, 1);
+    gfx.fillRect(flip * -8, 16 + bob - legSwing, 7, 4);
+
     // Corps
     gfx.fillStyle(body, 1);
-    gfx.fillRect(-8, -4, 16, 13);
-    // Bras
+    gfx.fillRect(-8, -4 + bob, 16, 13);
+
+    // Bras arrière
+    gfx.fillStyle(Phaser.Display.Color.IntegerToColor(body).darken(15).color, 1);
+    gfx.fillRect(flip * 8, -3 + bob + armSwing, 5, 9);
+    gfx.fillStyle(0xddbb77, 1);
+    gfx.fillCircle(flip * 11, 5 + bob + armSwing, 3);
+
+    // Bras avant
     gfx.fillStyle(body, 1);
-    gfx.fillRect(-13, -3, 5, 9);
-    gfx.fillRect(8,  -3, 5, 9);
-    // Mains
+    gfx.fillRect(flip * -13, -3 + bob - armSwing, 5, 9);
     gfx.fillStyle(0xffcc88, 1);
-    gfx.fillCircle(-11, 6, 3);
-    gfx.fillCircle(11,  6, 3);
+    gfx.fillCircle(flip * -11, 5 + bob - armSwing, 3);
+
     // Tête
     gfx.fillStyle(0xffcc88, 1);
-    gfx.fillCircle(0, -11, 8);
-    // Casquette (bord)
+    gfx.fillCircle(0, -11 + bob, 8);
+
+    // Casquette
     gfx.fillStyle(hat, 1);
-    gfx.fillRect(-9, -17, 18, 7);
-    gfx.fillRect(-12, -12, 6, 3);
-    // Bouton casquette
-    gfx.fillStyle(0xffffff, 0.5);
-    gfx.fillCircle(0, -15, 2);
-    // Yeux
+    gfx.fillRect(-9, -17 + bob, 18, 7);
+    gfx.fillRect(flip * -12, -12 + bob, 6, 3);
+    gfx.fillStyle(0xffffff, 0.4);
+    gfx.fillCircle(0, -15 + bob, 2);
+
+    // Yeux (monocle si flip)
     gfx.fillStyle(0x222222, 1);
-    gfx.fillRect(-4, -12, 2, 2);
-    gfx.fillRect(2,  -12, 2, 2);
-    // Contour joueur (soi-même seulement)
+    gfx.fillRect(flip * -4, -12 + bob, 2, 2);
+    gfx.fillRect(flip *  2, -12 + bob, 2, 2);
+
     if (isSelf) {
-      gfx.lineStyle(1.5, 0xffffff, 0.5);
-      gfx.strokeCircle(0, 0, 18);
+      gfx.lineStyle(1.5, 0xffffff, 0.35);
+      gfx.strokeCircle(0, bob, 18);
     }
   }
 
@@ -534,6 +557,7 @@ export class PokemonScene extends Phaser.Scene {
     this._checkPokecenter();
     this._updateZoneText();
     this._animateWater(time);
+    this._updateGrassParticles(delta);
 
     if (this._nearPokecenter && Phaser.Input.Keyboard.JustDown(this.eKey)) {
       this.onHeal?.();
@@ -562,16 +586,66 @@ export class PokemonScene extends Phaser.Scene {
 
     if (vx !== 0 && vy !== 0) { vx *= 0.707; vy *= 0.707; }
 
+    this._isMoving = vx !== 0 || vy !== 0;
+    if (vx > 0) this._walkDir = 1;
+    else if (vx < 0) this._walkDir = -1;
+
+    if (this._isMoving) {
+      this._walkTime += delta * 0.008;
+    } else {
+      // Retour progressif à la pose neutre
+      this._walkTime *= 0.85;
+    }
+
     this.playerBody.setVelocity(vx, vy);
     this.playerGfx.x = this.playerBody.x;
     this.playerGfx.y = this.playerBody.y;
     this.playerName.x = this.playerBody.x;
-    this.playerName.y = this.playerBody.y - 18;
+    this.playerName.y = this.playerBody.y - 22 + Math.sin(this._walkTime) * 2;
 
-    if (vx !== 0 || vy !== 0) {
+    // Redessiner le sprite avec animation
+    this._drawTrainer(this.playerGfx, true, this._walkTime, this._walkDir);
+
+    if (this._isMoving) {
       this._stepsSinceLastFight++;
       this.socket?.emit("move", { x: this.playerBody.x, y: this.playerBody.y });
+      // Particules d'herbe
+      this._spawnGrassParticles();
     }
+  }
+
+  _spawnGrassParticles() {
+    const px = this.playerGfx.x;
+    const py = this.playerGfx.y;
+    const inGrass = this.grassTiles.some(
+      (t) => Math.abs(px - t.x) < TILE && Math.abs(py - t.y) < TILE
+    );
+    if (!inGrass) return;
+    if (Math.random() > 0.15) return;
+    // Créer une particule
+    const p = this.add.graphics();
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 20 + Math.random() * 30;
+    const life = { val: 1.0 };
+    p.x = px + (Math.random() - 0.5) * 12;
+    p.y = py + 8;
+    this._grassParticles.push({ gfx: p, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed - 40, life });
+  }
+
+  _updateGrassParticles(delta) {
+    const dt = delta / 1000;
+    this._grassParticles = this._grassParticles.filter(({ gfx, vx, vy, life }) => {
+      life.val -= dt * 2.5;
+      if (life.val <= 0) { gfx.destroy(); return false; }
+      gfx.x += vx * dt;
+      gfx.y += vy * dt;
+      gfx.clear();
+      gfx.fillStyle(0x44cc44, life.val);
+      gfx.fillRect(-2, -4, 3, 5);
+      gfx.fillStyle(0x88ff44, life.val * 0.7);
+      gfx.fillRect(-1, -6, 2, 3);
+      return true;
+    });
   }
 
   _checkGrassEncounter() {
