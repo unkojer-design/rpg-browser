@@ -144,3 +144,39 @@ body {
 .bg-poke-dark {
   background-color: #0d1a0d;
 }
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50%       { opacity: 1;   transform: scale(1.08); }
+}
+
+@keyframes sprite-shake {
+  0%   { transform: translateX(0); }
+  20%  { transform: translateX(-8px) brightness(3); }
+  40%  { transform: translateX(8px); }
+  60%  { transform: translateX(-5px); }
+  80%  { transform: translateX(5px); }
+  100% { transform: translateX(0); }
+}
+
+@keyframes encounter-flash {
+  0%   { opacity: 0; }
+  30%  { opacity: 1; }
+  60%  { opacity: 0; }
+  80%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes hp-critical {
+  0%, 100% { filter: brightness(1); }
+  50%      { filter: brightness(1.4) hue-rotate(10deg); }
+}
+
+@keyframes level-up {
+  0%   { transform: scale(1); filter: brightness(1); }
+  50%  { transform: scale(1.15); filter: brightness(2) hue-rotate(60deg); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
+
+.sprite-shake { animation: sprite-shake 0.4s ease; }
+.hp-critical  { animation: hp-critical 0.8s infinite; }

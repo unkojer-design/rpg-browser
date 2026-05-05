@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { executePlayerMove, executeEnemyMove, canFlee } from "../game/BattleEngine";
 import { TYPES } from "../game/PokemonData";
+import PokemonPixelSprite from "../game/PokemonSprites";
 
 const TYPE_COLORS = {
   FEU: "#ff6030", EAU: "#6890f0", PLANTE: "#78c850",
@@ -19,29 +20,40 @@ const SPECIES_ICON = {
 
 function PokemonSprite({ pokemon, isWild, isShaking }) {
   const typeColor = TYPE_COLORS[pokemon.type] || "#ffffff";
-  const icon = SPECIES_ICON[pokemon.speciesId] || "❓";
+  const spriteSize = isWild ? 120 : 100;
   return (
-    <div className={`flex flex-col items-center gap-1 ${isShaking ? "animate-bounce" : ""}`}>
-      <div
-        className="rounded-full flex items-center justify-center"
-        style={{
-          width: isWild ? 80 : 64,
-          height: isWild ? 80 : 64,
-          background: `radial-gradient(circle at 35% 35%, ${typeColor}99, ${typeColor}22)`,
-          border: `3px solid ${typeColor}`,
-          fontSize: isWild ? 40 : 32,
-          boxShadow: `0 0 20px ${typeColor}66`,
-        }}
-      >
-        {icon}
+    <div
+      className={`flex flex-col items-center gap-1 ${isShaking ? "sprite-shake" : ""}`}
+    >
+      {/* Ombre au sol */}
+      <div style={{ position: "relative" }}>
+        <div style={{
+          position: "absolute", bottom: -4, left: "50%",
+          transform: "translateX(-50%)",
+          width: spriteSize * 0.7, height: 10,
+          background: "radial-gradient(ellipse, #00000066, transparent)",
+          borderRadius: "50%"
+        }} />
+        {/* Halo type */}
+        <div style={{
+          position: "absolute", inset: -8,
+          background: `radial-gradient(circle, ${typeColor}33, transparent 70%)`,
+          borderRadius: "50%",
+          animation: "pulse 2s infinite"
+        }} />
+        <PokemonPixelSprite pokemon={pokemon} size={spriteSize} />
       </div>
-      <span className="text-[8px] text-white">{pokemon.name}</span>
-      <span
-        className="text-[6px] px-1.5 py-0.5 rounded"
-        style={{ background: typeColor, color: "#fff" }}
-      >
-        {pokemon.type}
-      </span>
+      <span style={{
+        fontFamily: "'Press Start 2P', monospace",
+        fontSize: 7, color: "#ffffff",
+        textShadow: `0 0 8px ${typeColor}`
+      }}>{pokemon.name}</span>
+      <span style={{
+        fontFamily: "'Press Start 2P', monospace",
+        fontSize: 6, padding: "2px 6px", borderRadius: 3,
+        background: typeColor, color: "#fff",
+        boxShadow: `0 0 6px ${typeColor}88`
+      }}>{pokemon.type}</span>
     </div>
   );
 }
