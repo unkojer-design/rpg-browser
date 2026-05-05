@@ -7,13 +7,18 @@ const MAP_H = 50;
 const PLAYER_SPEED = 150;
 
 // Couleurs de la map
-const COL_GRASS   = 0x3a8a3a;
-const COL_DARK    = 0x1e5c1e;
-const COL_PATH    = 0xc8b46e;
-const COL_WATER   = 0x3060d0;
-const COL_TREE    = 0x1a5c1a;
-const COL_SAND    = 0xe8d88a;
-const COL_WALL    = 0x556b2f;
+const COL_GRASS      = 0x4aaa4a;
+const COL_GRASS2     = 0x3e9e3e;
+const COL_DARK       = 0x1a6b1a;
+const COL_DARK2      = 0x155515;
+const COL_PATH       = 0xd4b87a;
+const COL_PATH2      = 0xc4a060;
+const COL_WATER      = 0x2255cc;
+const COL_WATER2     = 0x3366dd;
+const COL_TREE       = 0x155515;
+const COL_TREE2      = 0x0d3d0d;
+const COL_SAND       = 0xeedd99;
+const COL_SAND2      = 0xddcc88;
 
 export class PokemonScene extends Phaser.Scene {
   constructor() {
@@ -52,30 +57,76 @@ export class PokemonScene extends Phaser.Scene {
     const gfx = this.add.graphics();
     this.grassTiles = [];
     this.waterTiles = [];
+    this._waterGfx = this.add.graphics();
+    this._waterTime = 0;
 
-    // Layout de la map : chemin central + zones herbe haute + eau + arbres
     for (let y = 0; y < MAP_H; y++) {
       for (let x = 0; x < MAP_W; x++) {
         const tile = this._getTileType(x, y);
-        let color;
-        if (tile === "water")   color = COL_WATER;
-        else if (tile === "tree") color = COL_TREE;
-        else if (tile === "path") color = COL_PATH;
-        else if (tile === "tallgrass") color = COL_DARK;
-        else if (tile === "sand") color = COL_SAND;
-        else color = COL_GRASS;
+        const checker = (x + y) % 2 === 0;
+        const px = x * TILE, py = y * TILE;
 
-        gfx.fillStyle(color, 1);
-        gfx.fillRect(x * TILE, y * TILE, TILE - 1, TILE - 1);
-
-        if (tile === "tallgrass") {
-          this.grassTiles.push({ x: x * TILE + TILE / 2, y: y * TILE + TILE / 2 });
-          // Petits brins d'herbe
-          gfx.fillStyle(0x2a7c2a, 1);
-          gfx.fillRect(x * TILE + 4, y * TILE + 8, 3, 10);
-          gfx.fillRect(x * TILE + 12, y * TILE + 5, 3, 13);
-          gfx.fillRect(x * TILE + 20, y * TILE + 9, 3, 9);
-          gfx.fillRect(x * TILE + 26, y * TILE + 6, 3, 12);
+        if (tile === "water") {
+          gfx.fillStyle(COL_WATER, 1);
+          gfx.fillRect(px, py, TILE, TILE);
+          this.waterTiles.push({ x: px + TILE / 2, y: py + TILE / 2 });
+        } else if (tile === "tree") {
+          gfx.fillStyle(checker ? COL_TREE : COL_TREE2, 1);
+          gfx.fillRect(px, py, TILE, TILE);
+          // Tronc
+          gfx.fillStyle(0x7a5c2e, 1);
+          gfx.fillRect(px + 12, py + 20, 8, 12);
+          // Feuillage (3 couches)
+          gfx.fillStyle(0x1a7a1a, 1);
+          gfx.fillTriangle(px + 16, py + 2, px + 4, py + 22, px + 28, py + 22);
+          gfx.fillStyle(0x228822, 1);
+          gfx.fillTriangle(px + 16, py + 6, px + 5, py + 24, px + 27, py + 24);
+          gfx.fillStyle(0x2a992a, 1);
+          gfx.fillTriangle(px + 16, py + 10, px + 7, py + 26, px + 25, py + 26);
+        } else if (tile === "path") {
+          gfx.fillStyle(checker ? COL_PATH : COL_PATH2, 1);
+          gfx.fillRect(px, py, TILE, TILE);
+          // Petits cailloux
+          gfx.fillStyle(0xb89050, 0.6);
+          gfx.fillCircle(px + 8, py + 8, 2);
+          gfx.fillCircle(px + 22, py + 18, 2);
+          gfx.fillCircle(px + 14, py + 24, 1.5);
+        } else if (tile === "tallgrass") {
+          gfx.fillStyle(checker ? COL_DARK : COL_DARK2, 1);
+          gfx.fillRect(px, py, TILE, TILE);
+          this.grassTiles.push({ x: px + TILE / 2, y: py + TILE / 2 });
+          // Brins d'herbe variés
+          gfx.fillStyle(0x33aa33, 1);
+          gfx.fillRect(px + 4,  py + 16, 3, 13);
+          gfx.fillRect(px + 11, py + 12, 3, 17);
+          gfx.fillRect(px + 18, py + 15, 3, 14);
+          gfx.fillRect(px + 25, py + 11, 3, 18);
+          gfx.fillStyle(0x44cc44, 1);
+          gfx.fillRect(px + 7,  py + 14, 2, 10);
+          gfx.fillRect(px + 22, py + 13, 2, 11);
+          // Petite fleur
+          if (checker) {
+            gfx.fillStyle(0xffff44, 1);
+            gfx.fillCircle(px + 14, py + 10, 2.5);
+          }
+        } else if (tile === "sand") {
+          gfx.fillStyle(checker ? COL_SAND : COL_SAND2, 1);
+          gfx.fillRect(px, py, TILE, TILE);
+          // Texture sable
+          gfx.fillStyle(0xccbb77, 0.5);
+          gfx.fillCircle(px + 10, py + 10, 2);
+          gfx.fillCircle(px + 22, py + 20, 1.5);
+        } else {
+          gfx.fillStyle(checker ? COL_GRASS : COL_GRASS2, 1);
+          gfx.fillRect(px, py, TILE, TILE);
+          // Petites fleurs aléatoires sur l'herbe
+          if ((x * 7 + y * 13) % 11 === 0) {
+            gfx.fillStyle(0xffffff, 0.7);
+            gfx.fillCircle(px + 16, py + 16, 2);
+          } else if ((x * 3 + y * 5) % 17 === 0) {
+            gfx.fillStyle(0xffaaff, 0.7);
+            gfx.fillCircle(px + 10, py + 20, 2);
+          }
         }
       }
     }
@@ -154,45 +205,136 @@ export class PokemonScene extends Phaser.Scene {
     return "grass";
   }
 
+  _drawBuilding(gfx, bx, by, bw, bh, wallColor, roofColor) {
+    const T = TILE;
+    // Ombre portée
+    gfx.fillStyle(0x000000, 0.18);
+    gfx.fillRect(bx * T + 4, by * T + 4, bw * T, bh * T);
+    // Murs
+    gfx.fillStyle(wallColor, 1);
+    gfx.fillRect(bx * T, by * T, bw * T, bh * T);
+    // Bord bas (socle)
+    gfx.fillStyle(0x000000, 0.15);
+    gfx.fillRect(bx * T, (by + bh) * T - 4, bw * T, 4);
+    // Toit
+    gfx.fillStyle(roofColor, 1);
+    gfx.fillTriangle(bx * T - 4, by * T, (bx + bw / 2) * T, (by - 1.2) * T, (bx + bw + 0.12) * T, by * T);
+    // Contour toit
+    gfx.lineStyle(2, 0x000000, 0.3);
+    gfx.strokeTriangle(bx * T - 4, by * T, (bx + bw / 2) * T, (by - 1.2) * T, (bx + bw + 0.12) * T, by * T);
+  }
+
   _drawBuildings(gfx) {
-    // Centre Pokémon
-    gfx.fillStyle(0xee3333, 1);
-    gfx.fillRect(22 * TILE, 34 * TILE, 5 * TILE, 4 * TILE);
+    const T = TILE;
+    // ── Centre Pokémon ──
+    this._drawBuilding(gfx, 22, 35, 5, 3, 0xee3333, 0xbb1111);
+    // Croix médicale
     gfx.fillStyle(0xffffff, 1);
-    gfx.fillRect(23 * TILE + 4, 35 * TILE + 4, 3 * TILE - 8, 1 * TILE - 4);
-    // Shop
-    gfx.fillStyle(0x3366ee, 1);
-    gfx.fillRect(30 * TILE, 34 * TILE, 5 * TILE, 4 * TILE);
+    gfx.fillRect(24 * T + 9, 36 * T + 4, 6, 14);
+    gfx.fillRect(24 * T + 4, 36 * T + 8, 16, 6);
+    // Fenêtres
+    gfx.fillStyle(0x88ccff, 1);
+    gfx.fillRect(22 * T + 4, 36 * T + 4, T - 6, T - 6);
+    gfx.fillRect(26 * T + 4, 36 * T + 4, T - 6, T - 6);
+    // Porte
+    gfx.fillStyle(0x884422, 1);
+    gfx.fillRect(23 * T + 10, 37 * T + 8, 12, 16);
+    gfx.fillStyle(0xffdd44, 1);
+    gfx.fillCircle(23 * T + 19, 37 * T + 16, 2);
+
+    // ── Shop / Poké Mart ──
+    this._drawBuilding(gfx, 29, 35, 5, 3, 0x2244cc, 0x112299);
+    // Vitrine
+    gfx.fillStyle(0xaaddff, 1);
+    gfx.fillRect(30 * T + 2, 36 * T + 2, 3 * T - 4, T - 4);
+    gfx.lineStyle(2, 0x6699cc, 1);
+    gfx.strokeRect(30 * T + 2, 36 * T + 2, 3 * T - 4, T - 4);
+    // Porte
+    gfx.fillStyle(0x884422, 1);
+    gfx.fillRect(31 * T + 8, 37 * T + 8, 12, 16);
+    // Signe Poké Ball
+    gfx.fillStyle(0xff2222, 1);
+    gfx.fillCircle(31 * T + 14, 35 * T + 14, 7);
     gfx.fillStyle(0xffffff, 1);
-    gfx.fillRect(31 * TILE + 4, 35 * TILE + 4, 3 * TILE - 8, 1 * TILE - 4);
-    // Maisons
-    [[22, 40], [28, 40], [34, 40], [22, 44], [28, 44], [34, 44]].forEach(([bx, by]) => {
-      gfx.fillStyle(0xeeddaa, 1);
-      gfx.fillRect(bx * TILE, by * TILE, 3 * TILE, 2 * TILE);
-      gfx.fillStyle(0xaa5533, 1);
-      gfx.fillTriangle(bx * TILE, by * TILE, (bx + 1.5) * TILE, (by - 1) * TILE, (bx + 3) * TILE, by * TILE);
+    gfx.fillRect(31 * T + 7, 35 * T + 13, 14, 3);
+    gfx.fillCircle(31 * T + 14, 35 * T + 14, 3);
+    gfx.lineStyle(1, 0x333333, 1);
+    gfx.strokeCircle(31 * T + 14, 35 * T + 14, 7);
+
+    // ── Maisons ──
+    const houses = [[21,41],[27,41],[33,41],[21,45],[27,45],[33,45]];
+    const roofCols = [0xcc4422, 0x446622, 0x224488, 0x884422, 0x664422, 0x226644];
+    houses.forEach(([bx, by], i) => {
+      this._drawBuilding(gfx, bx, by, 4, 3, 0xeeddbb, roofCols[i]);
+      // Fenêtre gauche
+      gfx.fillStyle(0x88ccff, 1);
+      gfx.fillRect(bx * T + 4, by * T + 6, T - 6, T - 6);
+      gfx.lineStyle(1, 0x6699aa, 1);
+      gfx.strokeRect(bx * T + 4, by * T + 6, T - 6, T - 6);
+      // Fenêtre droite
+      gfx.fillStyle(0x88ccff, 1);
+      gfx.fillRect((bx + 2) * T + 4, by * T + 6, T - 6, T - 6);
+      gfx.lineStyle(1, 0x6699aa, 1);
+      gfx.strokeRect((bx + 2) * T + 4, by * T + 6, T - 6, T - 6);
+      // Porte
+      gfx.fillStyle(0x7a4422, 1);
+      gfx.fillRect((bx + 1) * T + 8, (by + 1) * T + 8, 16, 20);
+      gfx.fillStyle(0xffcc44, 1);
+      gfx.fillCircle((bx + 1) * T + 22, (by + 1) * T + 18, 2);
     });
 
-    // Labels
-    this.add.text(24 * TILE + 4, 34 * TILE + 2, "Centre\nPKMN", {
-      fontSize: "7px", fill: "#ffffff", fontFamily: "'Press Start 2P', monospace", align: "center"
-    });
-    this.add.text(31 * TILE, 34 * TILE + 2, "Shop", {
-      fontSize: "7px", fill: "#ffffff", fontFamily: "'Press Start 2P', monospace"
-    });
+    // ── Labels ──
+    this.add.text(23 * T + 2, 35 * T + 2, "Centre PKMN", {
+      fontSize: "6px", fill: "#ffeeee", fontFamily: "'Press Start 2P', monospace",
+      stroke: "#880000", strokeThickness: 2
+    }).setDepth(10);
+    this.add.text(30 * T + 2, 35 * T + 2, "Poké Mart", {
+      fontSize: "6px", fill: "#eeeeff", fontFamily: "'Press Start 2P', monospace",
+      stroke: "#001166", strokeThickness: 2
+    }).setDepth(10);
+  }
+
+  _drawNPC(gfx, px, py, bodyColor, hatColor) {
+    // Ombre
+    gfx.fillStyle(0x000000, 0.2);
+    gfx.fillEllipse(px + 16, py + 30, 14, 5);
+    // Jambes
+    gfx.fillStyle(0x224488, 1);
+    gfx.fillRect(px + 9, py + 20, 5, 9);
+    gfx.fillRect(px + 18, py + 20, 5, 9);
+    // Chaussures
+    gfx.fillStyle(0x222222, 1);
+    gfx.fillRect(px + 8, py + 28, 7, 3);
+    gfx.fillRect(px + 17, py + 28, 7, 3);
+    // Corps
+    gfx.fillStyle(bodyColor, 1);
+    gfx.fillRect(px + 8, py + 10, 16, 12);
+    // Bras
+    gfx.fillStyle(bodyColor, 1);
+    gfx.fillRect(px + 3, py + 11, 5, 8);
+    gfx.fillRect(px + 24, py + 11, 5, 8);
+    // Tête
+    gfx.fillStyle(0xffcc88, 1);
+    gfx.fillCircle(px + 16, py + 7, 7);
+    // Casquette
+    gfx.fillStyle(hatColor, 1);
+    gfx.fillRect(px + 8, py + 2, 16, 5);
+    gfx.fillRect(px + 6, py + 5, 5, 3);
+    // Yeux
+    gfx.fillStyle(0x222222, 1);
+    gfx.fillRect(px + 12, py + 6, 2, 2);
+    gfx.fillRect(px + 18, py + 6, 2, 2);
   }
 
   _drawNPCs(gfx) {
-    // Quelques NPCs statiques (silhouettes)
-    const npcPositions = [
-      [25, 36], [31, 37], [33, 42],
-    ];
-    npcPositions.forEach(([nx, ny]) => {
-      gfx.fillStyle(0xffcc66, 1);
-      gfx.fillCircle(nx * TILE + 16, ny * TILE + 10, 6);
-      gfx.fillStyle(0x4488ff, 1);
-      gfx.fillRect(nx * TILE + 10, ny * TILE + 16, 12, 10);
-    });
+    // NPC1 : infirmière centre pokémon
+    this._drawNPC(gfx, 24 * TILE, 38 * TILE, 0xffbbcc, 0xffffff);
+    // NPC2 : vendeur
+    this._drawNPC(gfx, 31 * TILE, 38 * TILE, 0x4488ff, 0x224499);
+    // NPC3 : dresseur errant
+    this._drawNPC(gfx, 29 * TILE, 26 * TILE, 0x44aa44, 0x226622);
+    // NPC4 : pêcheur près du lac
+    this._drawNPC(gfx, 43 * TILE, 19 * TILE, 0xaa8844, 0x664422);
   }
 
   _createSelfPlayer() {
@@ -221,27 +363,49 @@ export class PokemonScene extends Phaser.Scene {
 
   _drawTrainer(gfx, isSelf) {
     gfx.clear();
+    const body  = isSelf ? 0xff4444 : 0x4488ff;
+    const hat   = isSelf ? 0xcc0000 : 0x0033aa;
+    const pants = isSelf ? 0x4466cc : 0x1155bb;
+    // Ombre
+    gfx.fillStyle(0x000000, 0.25);
+    gfx.fillEllipse(0, 20, 16, 5);
+    // Jambes
+    gfx.fillStyle(pants, 1);
+    gfx.fillRect(-7, 7, 5, 10);
+    gfx.fillRect(2,  7, 5, 10);
+    // Chaussures
+    gfx.fillStyle(0x222222, 1);
+    gfx.fillRect(-8, 15, 7, 4);
+    gfx.fillRect(1,  15, 7, 4);
     // Corps
-    gfx.fillStyle(isSelf ? 0xff4444 : 0x4488ff, 1);
-    gfx.fillRect(-7, -4, 14, 12);
+    gfx.fillStyle(body, 1);
+    gfx.fillRect(-8, -4, 16, 13);
+    // Bras
+    gfx.fillStyle(body, 1);
+    gfx.fillRect(-13, -3, 5, 9);
+    gfx.fillRect(8,  -3, 5, 9);
+    // Mains
+    gfx.fillStyle(0xffcc88, 1);
+    gfx.fillCircle(-11, 6, 3);
+    gfx.fillCircle(11,  6, 3);
     // Tête
     gfx.fillStyle(0xffcc88, 1);
-    gfx.fillCircle(0, -10, 7);
-    // Casquette
-    gfx.fillStyle(isSelf ? 0xcc0000 : 0x0044aa, 1);
-    gfx.fillRect(-8, -16, 16, 6);
-    gfx.fillRect(-10, -12, 4, 3);
-    // Jambes
-    gfx.fillStyle(0x3366cc, 1);
-    gfx.fillRect(-6, 8, 5, 8);
-    gfx.fillRect(1, 8, 5, 8);
-    // Souliers
-    gfx.fillStyle(0x333333, 1);
-    gfx.fillRect(-7, 14, 6, 4);
-    gfx.fillRect(1, 14, 6, 4);
+    gfx.fillCircle(0, -11, 8);
+    // Casquette (bord)
+    gfx.fillStyle(hat, 1);
+    gfx.fillRect(-9, -17, 18, 7);
+    gfx.fillRect(-12, -12, 6, 3);
+    // Bouton casquette
+    gfx.fillStyle(0xffffff, 0.5);
+    gfx.fillCircle(0, -15, 2);
+    // Yeux
+    gfx.fillStyle(0x222222, 1);
+    gfx.fillRect(-4, -12, 2, 2);
+    gfx.fillRect(2,  -12, 2, 2);
+    // Contour joueur (soi-même seulement)
     if (isSelf) {
-      gfx.lineStyle(2, 0xffffff, 0.4);
-      gfx.strokeRect(-12, -18, 24, 36);
+      gfx.lineStyle(1.5, 0xffffff, 0.5);
+      gfx.strokeCircle(0, 0, 18);
     }
   }
 
@@ -318,6 +482,20 @@ export class PokemonScene extends Phaser.Scene {
     this.eKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
   }
 
+  _animateWater(time) {
+    if (!this._waterGfx) return;
+    this._waterGfx.clear();
+    const wave = Math.sin(time / 600) * 0.15;
+    this.waterTiles.forEach(({ x, y }) => {
+      const col = wave > 0 ? COL_WATER2 : COL_WATER;
+      this._waterGfx.fillStyle(col, 0.4);
+      this._waterGfx.fillRect(x - TILE / 2 + 2, y - TILE / 2 + 2, TILE - 4, TILE - 4);
+      // Reflet
+      this._waterGfx.fillStyle(0xffffff, 0.08 + 0.06 * Math.sin(time / 400 + x));
+      this._waterGfx.fillRect(x - 8, y - 4, 16, 3);
+    });
+  }
+
   endBattle() {
     this._inBattle = false;
     this._stepsSinceLastFight = 0;
@@ -355,6 +533,7 @@ export class PokemonScene extends Phaser.Scene {
     this._checkGrassEncounter();
     this._checkPokecenter();
     this._updateZoneText();
+    this._animateWater(time);
 
     if (this._nearPokecenter && Phaser.Input.Keyboard.JustDown(this.eKey)) {
       this.onHeal?.();

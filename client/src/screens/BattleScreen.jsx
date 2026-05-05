@@ -155,64 +155,79 @@ export default function BattleScreen({ playerPokemon, wildPokemon, onBattleEnd }
     <div
       className="flex flex-col w-full h-full"
       style={{
-        background: "linear-gradient(180deg, #1a3a5c 0%, #0d1f33 50%, #2a3a1a 100%)",
         fontFamily: "'Press Start 2P', monospace",
         minHeight: 0,
+        background: "linear-gradient(180deg, #0a1628 0%, #1a2a4a 40%, #0d2010 100%)",
       }}
     >
       {/* Terrain de combat */}
-      <div className="flex-1 flex items-center justify-around px-8 relative" style={{ minHeight: 220 }}>
-        {/* Joueur (gauche) */}
-        <div className="flex flex-col items-start gap-2 w-48">
-          <PokemonSprite pokemon={player} isWild={false} isShaking={shakePlayer} />
-          <div className="poke-panel p-2 w-full">
-            <div className="flex justify-between text-[7px] text-gray-300 mb-1">
-              <span>{player.name}</span>
-              <span className="text-gray-500">Nv.{player.level}</span>
-            </div>
-            <HPBar current={player.hp} max={player.maxHp} label="HP" />
-            <div className="mt-1">
-              <XPBar current={player.xp} max={player.xpNeeded} />
-            </div>
-          </div>
-        </div>
+      <div className="flex-1 relative overflow-hidden" style={{ minHeight: 230 }}>
+        {/* Fond ciel */}
+        <div className="absolute inset-0" style={{
+          background: "linear-gradient(180deg, #1a2a5a 0%, #2a4a8a 50%, #3a6a3a 100%)"
+        }} />
+        {/* Sol ennemi (haut droite) */}
+        <div className="absolute" style={{
+          right: 40, top: "45%", width: 180, height: 22,
+          background: "radial-gradient(ellipse, #5a8a3a 60%, transparent 100%)",
+          borderRadius: "50%"
+        }} />
+        {/* Sol joueur (bas gauche) */}
+        <div className="absolute" style={{
+          left: 40, bottom: "18%", width: 200, height: 26,
+          background: "radial-gradient(ellipse, #6a9a4a 60%, transparent 100%)",
+          borderRadius: "50%"
+        }} />
 
-        {/* VS */}
-        <div className="text-poke-yellow text-xl font-bold opacity-50">VS</div>
-
-        {/* Ennemi (droite) */}
-        <div className="flex flex-col items-end gap-2 w-48">
-          <div className="poke-panel p-2 w-full">
-            <div className="flex justify-between text-[7px] text-gray-300 mb-1">
-              <span>{wild.name}</span>
-              <span className="text-gray-500">Nv.{wild.level}</span>
+        {/* Ennemi (droite, en haut) */}
+        <div className="absolute flex flex-col items-end gap-1" style={{ right: 24, top: 16 }}>
+          <div className="poke-panel p-2" style={{ minWidth: 180 }}>
+            <div className="flex justify-between items-center text-[7px] text-gray-300 mb-1">
+              <span className="text-white font-bold">{wild.name}</span>
+              <span className="text-poke-yellow">Nv.{wild.level}</span>
             </div>
             <HPBar current={wild.hp} max={wild.maxHp} label="HP" />
           </div>
           <PokemonSprite pokemon={wild} isWild={true} isShaking={shakeWild} />
         </div>
+
+        {/* Joueur (gauche, en bas) */}
+        <div className="absolute flex flex-col items-start gap-1" style={{ left: 24, bottom: 16 }}>
+          <PokemonSprite pokemon={player} isWild={false} isShaking={shakePlayer} />
+          <div className="poke-panel p-2" style={{ minWidth: 190 }}>
+            <div className="flex justify-between items-center text-[7px] text-gray-300 mb-1">
+              <span className="text-white font-bold">{player.name}</span>
+              <span className="text-poke-yellow">Nv.{player.level}</span>
+            </div>
+            <HPBar current={player.hp} max={player.maxHp} label="HP" />
+            <div className="mt-1"><XPBar current={player.xp} max={player.xpNeeded} /></div>
+          </div>
+        </div>
       </div>
 
-      {/* Boîte de texte + actions */}
-      <div className="poke-panel m-2 p-3 flex gap-3" style={{ minHeight: 160 }}>
+      {/* Boîte bas : log + actions */}
+      <div className="flex gap-2 m-2" style={{ minHeight: 150, background: "#0d1a2a", border: "2px solid #2a4a6a", borderRadius: 4, padding: 10 }}>
         {/* Log */}
         <div
           ref={logRef}
-          className="flex-1 overflow-y-auto flex flex-col gap-1"
-          style={{ maxHeight: 130 }}
+          className="flex-1 overflow-y-auto flex flex-col gap-0.5"
+          style={{ maxHeight: 130, borderRight: "1px solid #1a3a5a", paddingRight: 8 }}
         >
           {log.map((l, i) => (
-            <p key={i} className={`text-[7px] ${i === log.length - 1 ? "text-white" : "text-gray-400"}`}>
-              ▶ {l}
+            <p key={i} className={`text-[7px] leading-tight ${
+              i === log.length - 1 ? "text-white" :
+              i === log.length - 2 ? "text-gray-300" : "text-gray-500"
+            }`}>
+              {i === log.length - 1 ? "▶ " : "  "}{l}
             </p>
           ))}
         </div>
 
         {/* Boutons */}
-        <div className="flex flex-col gap-2 w-44">
+        <div className="flex flex-col gap-1.5" style={{ minWidth: 180 }}>
           {phase === "fight" ? (
             <>
-              <p className="text-[7px] text-poke-yellow mb-1">Que faire ?</p>
+              <p className="text-[7px] text-poke-yellow">Que faire ?</p>
               <div className="grid grid-cols-2 gap-1">
                 {player.moves.map((move) => {
                   const typeColor = TYPE_COLORS[move.type] || "#ffffff";
@@ -222,12 +237,18 @@ export default function BattleScreen({ playerPokemon, wildPokemon, onBattleEnd }
                       key={move.id}
                       onClick={() => useMove(move.id)}
                       disabled={busy || noPP}
-                      className="poke-btn text-[6px] py-1.5 px-1 flex flex-col items-center gap-0.5"
-                      style={!noPP ? { borderColor: typeColor, color: typeColor } : {}}
+                      className="text-[6px] py-1.5 px-1 flex flex-col items-center gap-0.5 rounded transition-all"
+                      style={{
+                        background: noPP ? "#1a1a2a" : `${typeColor}22`,
+                        border: `1.5px solid ${noPP ? "#333" : typeColor}`,
+                        color: noPP ? "#555" : typeColor,
+                        opacity: busy ? 0.6 : 1,
+                        cursor: busy || noPP ? "not-allowed" : "pointer",
+                      }}
                       title={`PP: ${move.pp}/${move.ppMax}`}
                     >
-                      <span>{move.name}</span>
-                      <span className="text-[5px] opacity-70">{move.type} · {move.pp}PP</span>
+                      <span className="font-bold">{move.name}</span>
+                      <span style={{ opacity: 0.7 }}>{move.type} · {move.pp}PP</span>
                     </button>
                   );
                 })}
@@ -235,7 +256,11 @@ export default function BattleScreen({ playerPokemon, wildPokemon, onBattleEnd }
               <button
                 onClick={flee}
                 disabled={busy}
-                className="poke-btn text-[7px] py-1 border-yellow-700 text-yellow-400"
+                className="text-[7px] py-1.5 rounded transition-all"
+                style={{
+                  background: "#2a1a00", border: "1.5px solid #aa8800",
+                  color: "#ffcc44", opacity: busy ? 0.5 : 1
+                }}
               >
                 🏃 Fuir
               </button>
