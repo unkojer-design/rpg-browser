@@ -43,8 +43,16 @@ export default function GameScreen({ token, character: initChar, onLogout }) {
     socket.on("init", ({ self, players }) => {
       setConnectedPlayers([self, ...players]);
 
-      const scene = new GameScene();
-      scene.init = () => {};
+      class BootedScene extends GameScene {
+        init() {
+          this.socket = socket;
+          this.selfData = { ...charRef.current };
+          this.onCombatStart = (mob) => startCombat(mob);
+          this.chatCallback = (data) => {
+            setChatMessages((prev) => [...prev.slice(-49), data]);
+          };
+        }
+      }
 
       const game = new Phaser.Game({
         type: Phaser.AUTO,
@@ -53,26 +61,13 @@ export default function GameScreen({ token, character: initChar, onLogout }) {
         height: gameRef.current.clientHeight,
         backgroundColor: "#0d0d1a",
         physics: { default: "arcade", arcade: { gravity: { y: 0 }, debug: false } },
-        scene: {
-          key: "GameScene",
-          create: GameScene.prototype.create,
-          update: GameScene.prototype.update,
-          init: function () {
-            this.socket = socket;
-            this.selfData = { ...charRef.current };
-            this.onCombatStart = (mob) => startCombat(mob);
-            this.chatCallback = (data) => {
-              setChatMessages((prev) => [...prev.slice(-49), data]);
-            };
-            GameScene.prototype.create.call(this);
-          },
-          extend: GameScene.prototype,
-        },
+        scene: BootedScene,
       });
 
-      game.scene.scenes[0].__proto__ = GameScene.prototype;
       phaserRef.current = game;
-      sceneRef.current = game.scene.scenes[0];
+      setTimeout(() => {
+        sceneRef.current = game.scene.getScene("GameScene");
+      }, 500);
     });
 
     socket.on("player_joined", (p) => {
