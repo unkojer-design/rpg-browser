@@ -321,6 +321,15 @@ export class PokemonScene extends Phaser.Scene {
   endBattle() {
     this._inBattle = false;
     this._stepsSinceLastFight = 0;
+    // Restaurer la position d'avant le combat
+    if (this._battleStartPos) {
+      this.playerBody.setPosition(this._battleStartPos.x, this._battleStartPos.y);
+      this.playerGfx.x = this._battleStartPos.x;
+      this.playerGfx.y = this._battleStartPos.y;
+      this.playerName.x = this._battleStartPos.x;
+      this.playerName.y = this._battleStartPos.y - 18;
+      this._battleStartPos = null;
+    }
   }
 
   _checkPokecenter() {
@@ -398,6 +407,7 @@ export class PokemonScene extends Phaser.Scene {
 
     this._stepsSinceLastFight = 0;
     this._inBattle = true;
+    this._battleStartPos = { x: this.playerBody.x, y: this.playerBody.y };
 
     // Choisir zone selon position
     let zoneIdx = 0;
