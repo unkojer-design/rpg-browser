@@ -12,7 +12,7 @@ function initDB() {
   if (!fs.existsSync(DB_DIR)) fs.mkdirSync(DB_DIR, { recursive: true });
   const adapter = new FileSync(DB_PATH);
   db = low(adapter);
-  db.defaults({ users: [], characters: [] }).write();
+  db.defaults({ users: [], characters: [], trainers: [] }).write();
   console.log("DB initialized at", DB_PATH);
   return db;
 }

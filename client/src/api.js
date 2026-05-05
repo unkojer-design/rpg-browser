@@ -1,7 +1,7 @@
 const BASE = `${import.meta.env.VITE_SERVER_URL || ""}/api`;
 
 function getToken() {
-  return localStorage.getItem("rpg_token");
+  return localStorage.getItem("pokemon_token") || localStorage.getItem("rpg_token");
 }
 
 function authHeaders() {
@@ -42,6 +42,29 @@ export async function createCharacter(name, charClass) {
 
 export async function saveCharacter(data) {
   const r = await fetch(`${BASE}/character/save`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify(data),
+  });
+  return r.json();
+}
+
+export async function getTrainer() {
+  const r = await fetch(`${BASE}/trainer`, { headers: authHeaders() });
+  return r.json();
+}
+
+export async function createTrainer(name, starterId) {
+  const r = await fetch(`${BASE}/trainer/create`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify({ name, starterId }),
+  });
+  return r.json();
+}
+
+export async function saveTrainer(data) {
+  const r = await fetch(`${BASE}/trainer/save`, {
     method: "POST",
     headers: authHeaders(),
     body: JSON.stringify(data),

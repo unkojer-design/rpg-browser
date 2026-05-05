@@ -16,6 +16,12 @@ export default {
           mp: "#3498db",
           xp: "#2ecc71",
         },
+        poke: {
+          dark: "#0d1a0d",
+          panel: "#0f1f0f",
+          border: "#2a5a2a",
+          yellow: "#f8d030",
+        },
       },
     },
   },

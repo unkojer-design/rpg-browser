@@ -85,3 +85,62 @@ body {
   border-radius: 2px;
   transition: width 0.3s;
 }
+
+/* ===== POKEMON THEME ===== */
+
+.poke-dark {
+  background-color: #0d1a0d;
+}
+
+.text-poke-yellow {
+  color: #f8d030;
+}
+
+.poke-panel {
+  background: #0f1f0f;
+  border: 2px solid #2a5a2a;
+  border-radius: 4px;
+}
+
+.poke-btn {
+  background: #1a3a1a;
+  border: 2px solid #4a8a4a;
+  color: #f8d030;
+  font-family: "Press Start 2P", monospace;
+  cursor: pointer;
+  transition: all 0.15s;
+  padding: 8px 16px;
+  font-size: 10px;
+  border-radius: 2px;
+}
+.poke-btn:hover {
+  background: #2a5a2a;
+  border-color: #f8d030;
+}
+.poke-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.poke-input {
+  background: #0a120a;
+  border: 2px solid #2a5a2a;
+  color: #e0e0e0;
+  font-family: "Press Start 2P", monospace;
+  font-size: 10px;
+  padding: 8px 12px;
+  outline: none;
+  border-radius: 2px;
+  width: 100%;
+}
+.poke-input:focus {
+  border-color: #4a8a4a;
+}
+
+.border-poke-yellow {
+  border-color: #f8d030;
+}
+
+.bg-poke-dark {
+  background-color: #0d1a0d;
+}

@@ -23,24 +23,32 @@ function setupSockets(io) {
 
     const db = getDB();
     const char = db.get("characters").find({ user_id: userId }).value();
-    if (!char) {
-      socket.emit("error", "No character found");
+    const trainer = db.get("trainers").find({ user_id: userId }).value();
+
+    const entityData = trainer || char;
+    if (!entityData) {
+      socket.emit("error", "No character or trainer found");
       socket.disconnect();
       return;
     }
+
+    const level = trainer
+      ? (trainer.team && trainer.team[0] ? trainer.team[0].level : 1)
+      : (char.level || 1);
 
     const playerData = {
       socketId: socket.id,
       userId,
       username,
-      name: char.name,
-      class: char.class,
-      x: char.x,
-      y: char.y,
-      map_id: char.map_id,
-      hp: char.hp,
-      max_hp: char.max_hp,
-      level: char.level,
+      name: entityData.name,
+      class: trainer ? "trainer" : char.class,
+      x: entityData.x,
+      y: entityData.y,
+      map_id: entityData.map_id,
+      hp: trainer ? (trainer.team[0]?.hp ?? 0) : char.hp,
+      max_hp: trainer ? (trainer.team[0]?.maxHp ?? 1) : char.max_hp,
+      level,
+      isTrainer: !!trainer,
     };
 
     connectedPlayers.set(socket.id, playerData);
