@@ -13,7 +13,7 @@ const server = http.createServer(app);
 
 const CLIENT_URL = process.env.CLIENT_URL || null;
 
-const corsOrigin = CLIENT_URL || /^http:\/\/localhost:\d+$/;
+const corsOrigin = CLIENT_URL || true;
 
 const io = new Server(server, {
   cors: {
