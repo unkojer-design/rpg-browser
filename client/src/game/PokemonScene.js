@@ -326,12 +326,12 @@ export class PokemonScene extends Phaser.Scene {
   _checkPokecenter() {
     const px = this.playerGfx.x;
     const py = this.playerGfx.y;
-    // Centre Pokémon est aux tiles 22-26, 40-43 (en pixels)
+    // Centre Pokémon est aux tiles 22-27, 34-38 (en pixels)
     const centerX = 24 * TILE;
-    const centerY = 41 * TILE;
+    const centerY = 38 * TILE;
     const dist = Math.abs(px - centerX) + Math.abs(py - centerY);
     const wasNear = this._nearPokecenter;
-    this._nearPokecenter = dist < TILE * 3;
+    this._nearPokecenter = dist < TILE * 5;
     if (this._nearPokecenter && !wasNear) {
       // Affiche message
       if (this.healPromptText) this.healPromptText.setVisible(true);
