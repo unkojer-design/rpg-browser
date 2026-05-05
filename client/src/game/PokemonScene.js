@@ -100,6 +100,9 @@ export class PokemonScene extends Phaser.Scene {
     this.waterTiles = [];
     this._waterGfx = this.add.graphics();
     this._waterTime = 0;
+    this._flowers = [];  // { x, y, gfx }
+    this._flowerGfx = this.add.graphics().setDepth(2);
+    this._shadowGfx = this.add.graphics().setDepth(1).setAlpha(0.25);
 
     for (let y = 0; y < MAP_H; y++) {
       for (let x = 0; x < MAP_W; x++) {
@@ -114,6 +117,9 @@ export class PokemonScene extends Phaser.Scene {
         } else if (tile === "tree") {
           gfx.fillStyle(checker ? COL_TREE : COL_TREE2, 1);
           gfx.fillRect(px, py, TILE, TILE);
+          // Ombre de l'arbre (droite+bas)
+          this._shadowGfx.fillStyle(0x000000, 1);
+          this._shadowGfx.fillEllipse(px + 22, py + 28, 20, 8);
           // Tronc
           gfx.fillStyle(0x7a5c2e, 1);
           gfx.fillRect(px + 12, py + 20, 8, 12);
@@ -124,6 +130,9 @@ export class PokemonScene extends Phaser.Scene {
           gfx.fillTriangle(px + 16, py + 6, px + 5, py + 24, px + 27, py + 24);
           gfx.fillStyle(0x2a992a, 1);
           gfx.fillTriangle(px + 16, py + 10, px + 7, py + 26, px + 25, py + 26);
+          // Reflet sur feuillage
+          gfx.fillStyle(0x66ff66, 0.3);
+          gfx.fillCircle(px + 12, py + 10, 4);
         } else if (tile === "path") {
           gfx.fillStyle(checker ? COL_PATH : COL_PATH2, 1);
           gfx.fillRect(px, py, TILE, TILE);
@@ -145,10 +154,12 @@ export class PokemonScene extends Phaser.Scene {
           gfx.fillStyle(0x44cc44, 1);
           gfx.fillRect(px + 7,  py + 14, 2, 10);
           gfx.fillRect(px + 22, py + 13, 2, 11);
-          // Petite fleur
-          if (checker) {
-            gfx.fillStyle(0xffff44, 1);
-            gfx.fillCircle(px + 14, py + 10, 2.5);
+          // Fleurs animées
+          if ((x + y * 3) % 5 === 0) {
+            this._flowers.push({ x: px + 14, y: py + 10 });
+          }
+          if (checker && (x + y) % 7 === 0) {
+            this._flowers.push({ x: px + 8, y: py + 18 });
           }
         } else if (tile === "sand") {
           gfx.fillStyle(checker ? COL_SAND : COL_SAND2, 1);
@@ -541,6 +552,27 @@ export class PokemonScene extends Phaser.Scene {
     this.eKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
   }
 
+  _animateFlowers(time) {
+    if (!this._flowerGfx || this._flowers.length === 0) return;
+    this._flowerGfx.clear();
+    const t = time / 1000;
+    this._flowers.forEach(({ x, y }, i) => {
+      const bob = Math.sin(t * 2.5 + i * 0.7) * 1.5;
+      const hue = (i % 4);
+      const colors = [0xffff44, 0xff88cc, 0xffffff, 0xff6644];
+      const col = colors[hue];
+      // Pétales
+      this._flowerGfx.fillStyle(col, 0.9);
+      this._flowerGfx.fillCircle(x,     y + bob - 2, 2);
+      this._flowerGfx.fillCircle(x + 2, y + bob,     2);
+      this._flowerGfx.fillCircle(x - 2, y + bob,     2);
+      this._flowerGfx.fillCircle(x,     y + bob + 2, 2);
+      // Centre
+      this._flowerGfx.fillStyle(0xffaa00, 1);
+      this._flowerGfx.fillCircle(x, y + bob, 1.5);
+    });
+  }
+
   _animateClouds(delta) {
     if (!this._cloudGfx) return;
     const dt = delta / 1000;
@@ -612,6 +644,7 @@ export class PokemonScene extends Phaser.Scene {
     this._animateWater(time);
     this._updateGrassParticles(delta);
     this._animateClouds(delta);
+    this._animateFlowers(time);
 
     if (this._nearPokecenter && Phaser.Input.Keyboard.JustDown(this.eKey)) {
       this.onHeal?.();

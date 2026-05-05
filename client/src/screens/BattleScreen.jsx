@@ -99,9 +99,18 @@ export default function BattleScreen({ playerPokemon, wildPokemon, onBattleEnd }
   const [shakePlayer, setShakePlayer] = useState(false);
   const [phase, setPhase] = useState("fight");
   const [result, setResult] = useState(null);
-  const [flashColor, setFlashColor] = useState(null); // flash plein écran
-  const [attackFx, setAttackFx] = useState(null); // { side, color }
+  const [flashColor, setFlashColor] = useState(null);
+  const [attackFx, setAttackFx] = useState(null);
   const [evolving, setEvolving] = useState(false);
+  const [confetti] = useState(() =>
+    [...Array(28)].map((_, i) => ({
+      left: `${(i * 31 + 7) % 100}%`,
+      delay: (i * 0.18) % 2.5,
+      dur: 1.8 + (i % 5) * 0.4,
+      color: ["#f0c040","#44ff88","#44aaff","#ff6644","#ff44cc","#ffffff"][i % 6],
+      size: 5 + (i % 4) * 3,
+    }))
+  );
   const logRef = useRef(null);
 
   // Flash d'entrée
@@ -231,10 +240,17 @@ export default function BattleScreen({ playerPokemon, wildPokemon, onBattleEnd }
 
       {/* Terrain de combat */}
       <div className="flex-1 relative overflow-hidden" style={{ minHeight: 230 }}>
-        {/* Fond ciel */}
+        {/* Fond panoramique animé */}
         <div className="absolute inset-0" style={{
-          background: "linear-gradient(180deg, #1a2a5a 0%, #2a4a8a 50%, #3a6a3a 100%)"
+          background: "linear-gradient(120deg, #0a1a3a, #1a3a6a, #0a2a1a, #1a4a2a, #0a1a3a)",
+          backgroundSize: "300% 300%",
+          animation: "battle-bg-pan 12s ease infinite"
         }} />
+        {/* Montagnes décor */}
+        <svg className="absolute bottom-0 w-full" style={{ height: "45%", opacity: 0.35 }} viewBox="0 0 800 200" preserveAspectRatio="none">
+          <polygon points="0,200 120,60 240,120 380,30 500,100 640,20 800,80 800,200" fill="#1a3a2a" />
+          <polygon points="0,200 80,100 160,140 280,70 420,120 560,50 700,110 800,90 800,200" fill="#0f2a1a" />
+        </svg>
         {/* Sol ennemi (haut droite) */}
         <div className="absolute" style={{
           right: 40, top: "45%", width: 180, height: 22,
@@ -352,15 +368,49 @@ export default function BattleScreen({ playerPokemon, wildPokemon, onBattleEnd }
           ) : (
             <div className="flex flex-col gap-2 items-center justify-center h-full">
               {result === "win" && (
-                <p className="text-green-400 text-[8px] text-center">🏆 Victoire !</p>
+                <>
+                  {/* Confettis */}
+                  <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 60 }}>
+                    {confetti.map((c, i) => (
+                      <div key={i} className="absolute" style={{
+                        left: c.left, top: "-10px",
+                        width: c.size, height: c.size,
+                        background: c.color,
+                        borderRadius: i % 2 === 0 ? "50%" : "2px",
+                        animation: `confetti-fall ${c.dur}s ease-in ${c.delay}s infinite`,
+                        boxShadow: `0 0 4px ${c.color}`
+                      }} />
+                    ))}
+                  </div>
+                  <div className="victory" style={{
+                    padding: "12px 20px", borderRadius: 8,
+                    background: "linear-gradient(135deg, #1a3a0a, #0a2a00)",
+                    border: "2px solid #f0c040",
+                  }}>
+                    <p style={{ fontFamily: "'Press Start 2P', monospace", fontSize: 10, color: "#f0c040", textAlign: "center" }}>
+                      🏆 VICTOIRE !
+                    </p>
+                  </div>
+                </>
               )}
               {result === "lose" && (
-                <p className="text-red-400 text-[8px] text-center">💀 Défaite...</p>
+                <div style={{ padding: "12px 20px", borderRadius: 8,
+                  background: "linear-gradient(135deg, #3a0a0a, #1a0000)",
+                  border: "2px solid #ff3333" }}>
+                  <p style={{ fontFamily: "'Press Start 2P', monospace", fontSize: 10, color: "#ff4444", textAlign: "center" }}>
+                    💀 Défaite...
+                  </p>
+                </div>
               )}
               {result === "fled" && (
-                <p className="text-yellow-400 text-[8px] text-center">🏃 Fuite réussie</p>
+                <div style={{ padding: "10px 16px", borderRadius: 6,
+                  background: "#1a1a00", border: "2px solid #aaaa00" }}>
+                  <p style={{ fontFamily: "'Press Start 2P', monospace", fontSize: 9, color: "#ffff44", textAlign: "center" }}>
+                    🏃 Fuite réussie
+                  </p>
+                </div>
               )}
-              <button onClick={handleEnd} className="poke-btn text-[8px] py-2 px-4 mt-2">
+              <button onClick={handleEnd} className="poke-btn text-[8px] py-2 px-4 mt-2 slide-up">
                 Continuer →
               </button>
             </div>
