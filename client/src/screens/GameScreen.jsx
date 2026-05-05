@@ -51,8 +51,15 @@ export default function GameScreen({ token, trainer: initTrainer, onLogout }) {
         init() {
           this.socket = socket;
           this.trainerData = { ...trainerRef.current };
+          this.existingPlayers = players;
           this.onWildEncounter = (wildPokemon) => {
             setBattle({ wildPokemon });
+          };
+          this.onHeal = () => {
+            const healedTeam = trainerRef.current.team.map(p => ({ ...p, hp: p.maxHp }));
+            updateTrainer({ team: healedTeam });
+            saveTrainer({ ...trainerRef.current, team: healedTeam });
+            showNotif("💊 Pokémon soignés au Centre Pokémon !", "success");
           };
           this.chatCallback = (data) => {
             setChatMessages((prev) => [...prev.slice(-49), data]);

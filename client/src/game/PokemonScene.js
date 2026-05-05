@@ -21,10 +21,13 @@ export class PokemonScene extends Phaser.Scene {
     this.players = new Map();
     this.socket = null;
     this.trainerData = null;
+    this.existingPlayers = [];
     this.onWildEncounter = null;
+    this.onHeal = null;
     this.chatCallback = null;
     this._inBattle = false;
     this._stepsSinceLastFight = 0;
+    this._nearPokecenter = false;
     this.saveTimer = 0;
     this.lastSavedPos = { x: 0, y: 0 };
     this.grassTiles = [];
@@ -36,6 +39,8 @@ export class PokemonScene extends Phaser.Scene {
   create() {
     this._buildMap();
     this._createSelfPlayer();
+    // Charger les joueurs déjà connectés
+    (this.existingPlayers || []).forEach((p) => this._addRemotePlayer(p));
     this._setupRemotePlayers();
     this._setupCamera();
     this._setupInput();
@@ -299,11 +304,18 @@ export class PokemonScene extends Phaser.Scene {
   }
 
   _createUI() {
-    // Panneau mini-map / zone indicateur
     this.zoneText = this.add.text(10, 10, "Route 1", {
       fontSize: "8px", fill: "#ffffff", fontFamily: "'Press Start 2P', monospace",
       backgroundColor: "#00000088", padding: { x: 6, y: 4 }
     }).setScrollFactor(0).setDepth(100);
+
+    this.healPromptText = this.add.text(0, 0, "💊 Appuie sur E pour soigner", {
+      fontSize: "8px", fill: "#ffffff", fontFamily: "'Press Start 2P', monospace",
+      backgroundColor: "#cc000099", padding: { x: 6, y: 4 }
+    }).setScrollFactor(0).setDepth(100).setVisible(false)
+      .setPosition(this.scale.width / 2 - 100, this.scale.height / 2 - 60);
+
+    this.eKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
   }
 
   endBattle() {
@@ -311,11 +323,34 @@ export class PokemonScene extends Phaser.Scene {
     this._stepsSinceLastFight = 0;
   }
 
+  _checkPokecenter() {
+    const px = this.playerGfx.x;
+    const py = this.playerGfx.y;
+    // Centre Pokémon est aux tiles 22-26, 40-43 (en pixels)
+    const centerX = 24 * TILE;
+    const centerY = 41 * TILE;
+    const dist = Math.abs(px - centerX) + Math.abs(py - centerY);
+    const wasNear = this._nearPokecenter;
+    this._nearPokecenter = dist < TILE * 3;
+    if (this._nearPokecenter && !wasNear) {
+      // Affiche message
+      if (this.healPromptText) this.healPromptText.setVisible(true);
+    } else if (!this._nearPokecenter && wasNear) {
+      if (this.healPromptText) this.healPromptText.setVisible(false);
+    }
+  }
+
   update(time, delta) {
     if (this._inBattle) return;
     this._handleMovement(delta);
     this._checkGrassEncounter();
+    this._checkPokecenter();
     this._updateZoneText();
+
+    if (this._nearPokecenter && Phaser.Input.Keyboard.JustDown(this.eKey)) {
+      this.onHeal?.();
+      this.healPromptText?.setVisible(false);
+    }
 
     this.saveTimer += delta;
     if (this.saveTimer > 5000) {
