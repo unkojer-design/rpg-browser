@@ -39,23 +39,59 @@ export class PokemonScene extends Phaser.Scene {
     this.waterTiles = [];
     // Animation de marche
     this._walkTime = 0;
-    this._walkDir = 1; // 1=droite, -1=gauche
+    this._walkDir = 1;
     this._isMoving = false;
     this._grassParticles = [];
+    // Atmosphère
+    this._clouds = [];
+    this._cloudGfx = null;
+    this._ambientTime = 0;
   }
 
   init() {}
 
   create() {
     this._buildMap();
+    this._createAtmosphere();
     this._createSelfPlayer();
-    // Charger les joueurs déjà connectés
     (this.existingPlayers || []).forEach((p) => this._addRemotePlayer(p));
     this._setupRemotePlayers();
     this._setupCamera();
     this._setupInput();
     this._setupSocketHandlers();
     this._createUI();
+  }
+
+  _createAtmosphere() {
+    this._cloudGfx = this.add.graphics().setScrollFactor(0.15).setDepth(5).setAlpha(0.55);
+    const W = this.mapWidth;
+    // Générer nuages
+    for (let i = 0; i < 8; i++) {
+      this._clouds.push({
+        x: Math.random() * W * 1.5,
+        y: 40 + Math.random() * 120,
+        speed: 8 + Math.random() * 14,
+        w: 60 + Math.random() * 80,
+        h: 20 + Math.random() * 20,
+        alpha: 0.3 + Math.random() * 0.4,
+      });
+    }
+    // Overlay ambiance (nuit/jour selon heure)
+    const hour = new Date().getHours();
+    const isNight = hour < 6 || hour >= 20;
+    if (isNight) {
+      const overlay = this.add.graphics().setScrollFactor(0).setDepth(4);
+      overlay.fillStyle(0x000033, 0.35);
+      overlay.fillRect(0, 0, this.scale.width, this.scale.height);
+      // Étoiles
+      const stars = this.add.graphics().setScrollFactor(0.05).setDepth(3);
+      for (let i = 0; i < 60; i++) {
+        const sx = Math.random() * this.mapWidth;
+        const sy = Math.random() * this.mapHeight * 0.4;
+        stars.fillStyle(0xffffff, 0.4 + Math.random() * 0.6);
+        stars.fillRect(sx, sy, (Math.random() > 0.7 ? 2 : 1), (Math.random() > 0.7 ? 2 : 1));
+      }
+    }
   }
 
   _buildMap() {
@@ -505,6 +541,23 @@ export class PokemonScene extends Phaser.Scene {
     this.eKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
   }
 
+  _animateClouds(delta) {
+    if (!this._cloudGfx) return;
+    const dt = delta / 1000;
+    this._ambientTime += dt;
+    this._cloudGfx.clear();
+    const W = this.mapWidth;
+    this._clouds.forEach(c => {
+      c.x += c.speed * dt;
+      if (c.x > W * 1.5) c.x = -c.w - 10;
+      // Nuage : 3 ellipses superposées
+      this._cloudGfx.fillStyle(0xffffff, c.alpha);
+      this._cloudGfx.fillEllipse(c.x, c.y, c.w, c.h);
+      this._cloudGfx.fillEllipse(c.x - c.w * 0.25, c.y + c.h * 0.1, c.w * 0.7, c.h * 0.8);
+      this._cloudGfx.fillEllipse(c.x + c.w * 0.25, c.y + c.h * 0.1, c.w * 0.6, c.h * 0.75);
+    });
+  }
+
   _animateWater(time) {
     if (!this._waterGfx) return;
     this._waterGfx.clear();
@@ -558,6 +611,7 @@ export class PokemonScene extends Phaser.Scene {
     this._updateZoneText();
     this._animateWater(time);
     this._updateGrassParticles(delta);
+    this._animateClouds(delta);
 
     if (this._nearPokecenter && Phaser.Input.Keyboard.JustDown(this.eKey)) {
       this.onHeal?.();

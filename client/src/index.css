@@ -180,3 +180,26 @@ body {
 
 .sprite-shake { animation: sprite-shake 0.4s ease; }
 .hp-critical  { animation: hp-critical 0.8s infinite; }
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%      { transform: translateY(-6px); }
+}
+
+@keyframes cloud-move {
+  from { transform: translateX(-120px); }
+  to   { transform: translateX(calc(100vw + 120px)); }
+}
+
+@keyframes wind-grass {
+  0%, 100% { transform: skewX(0deg); }
+  50%      { transform: skewX(4deg) scaleY(0.96); }
+}
+
+.float       { animation: float 3s ease-in-out infinite; }
+.cloud-move  { animation: cloud-move linear infinite; }

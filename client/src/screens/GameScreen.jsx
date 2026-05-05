@@ -4,6 +4,7 @@ import { io } from "socket.io-client";
 import { PokemonScene } from "../game/PokemonScene";
 import { saveTrainer } from "../api";
 import BattleScreen from "./BattleScreen";
+import PokemonPixelSprite from "../game/PokemonSprites";
 
 const TYPE_COLORS = {
   FEU: "#ff6030", EAU: "#6890f0", PLANTE: "#78c850",
@@ -170,149 +171,166 @@ export default function GameScreen({ token, trainer: initTrainer, onLogout }) {
       </div>
 
       {/* Panneau droit */}
-      <div className="w-64 flex flex-col gap-2 p-2 overflow-hidden" style={{ background: "#0a120a" }}>
-        {/* Dresseur */}
-        <div className="poke-panel p-3 flex flex-col gap-2">
-          <div className="flex justify-between items-center">
-            <span className="text-poke-yellow text-[8px]">🎮 {trainer.name}</span>
-            <span className="text-gray-400 text-[6px]">💰 {trainer.money}</span>
+      <div className="w-64 flex flex-col gap-2 p-2 overflow-hidden" style={{
+        background: "linear-gradient(180deg, #060e06 0%, #0a140a 100%)",
+        borderLeft: "2px solid #1a3a1a"
+      }}>
+
+        {/* Carte dresseur */}
+        <div style={{
+          background: "linear-gradient(135deg, #0f2a0f, #1a3a1a)",
+          border: "2px solid #2a5a2a", borderRadius: 6,
+          padding: 10, boxShadow: "0 0 12px #0a2a0a"
+        }}>
+          <div className="flex justify-between items-center mb-2">
+            <span style={{ fontSize: 8, color: "#f0c040", fontFamily: "'Press Start 2P', monospace" }}>
+              🎮 {trainer.name}
+            </span>
+            <span style={{ fontSize: 6, color: "#88aa88" }}>💰{trainer.money}</span>
           </div>
-          {/* Pokémon de tête */}
+
           {leadPokemon && (
-            <div className="flex flex-col gap-1">
-              <div className="flex items-center gap-2">
-                <span className="text-lg">
-                  {{
-                    salameche: "🦎", reptincel: "🦎", dracaufeu: "🐉",
-                    carapuce: "🐢", carabaffe: "🐢", tortank: "🐢",
-                    bulbizarre: "🌿", herbizarre: "🌿", florizarre: "🌸",
-                    pikachu: "⚡", raichu: "⚡", mewtwo: "🔮",
-                    dracolosse: "🐲", ronflex: "😴", osselait: "💀",
-                    ossatueur: "💀", abra: "🔮", kadabra: "🔮",
-                  }[leadPokemon.speciesId] || "❓"}
-                </span>
-                <div className="flex flex-col">
-                  <span className="text-[8px] text-white">{leadPokemon.name}</span>
-                  <span className="text-[6px] text-gray-400">Nv.{leadPokemon.level}</span>
-                </div>
-                <span
-                  className="text-[6px] ml-auto px-1 py-0.5 rounded"
-                  style={{ background: TYPE_COLORS[leadPokemon.type] || "#888", color: "#fff" }}
-                >
-                  {leadPokemon.type}
-                </span>
+            <div className="flex items-center gap-2">
+              {/* Mini sprite */}
+              <div style={{
+                background: `radial-gradient(circle, ${TYPE_COLORS[leadPokemon.type] || "#444"}44, transparent)`,
+                borderRadius: 6, padding: 2, flexShrink: 0
+              }}>
+                <PokemonPixelSprite pokemon={leadPokemon} size={44} />
               </div>
-              <HPBar current={leadPokemon.hp} max={leadPokemon.maxHp} />
-              <XPBar current={leadPokemon.xp} max={leadPokemon.xpNeeded} />
+              <div className="flex flex-col gap-1 flex-1 min-w-0">
+                <div className="flex justify-between">
+                  <span style={{ fontSize: 7, color: "#fff" }}>{leadPokemon.name}</span>
+                  <span style={{ fontSize: 6, color: "#f0c040" }}>Nv.{leadPokemon.level}</span>
+                </div>
+                <span style={{
+                  fontSize: 6, padding: "1px 5px", borderRadius: 3, alignSelf: "flex-start",
+                  background: TYPE_COLORS[leadPokemon.type] || "#888", color: "#fff"
+                }}>{leadPokemon.type}</span>
+                <HPBar current={leadPokemon.hp} max={leadPokemon.maxHp} />
+                <XPBar current={leadPokemon.xp} max={leadPokemon.xpNeeded} />
+              </div>
             </div>
           )}
         </div>
 
         {/* Équipe */}
-        <button
-          className="poke-btn text-[7px] py-1"
-          onClick={() => setShowTeam(!showTeam)}
-        >
-          {showTeam ? "▲ Cacher équipe" : "▼ Voir équipe"}
+        <button className="poke-btn text-[7px] py-1" onClick={() => setShowTeam(!showTeam)}>
+          {showTeam ? "▲ Équipe" : "▼ Équipe"} ({trainer.team.length})
         </button>
         {showTeam && (
-          <div className="poke-panel p-2 flex flex-col gap-1 overflow-y-auto" style={{ maxHeight: 160 }}>
-            {trainer.team.map((p, i) => (
-              <div key={i} className="flex items-center gap-1 text-[6px] border-b border-gray-800 pb-1">
-                <span className="text-[9px]">
-                  {{
-                    salameche: "🦎", reptincel: "🦎", dracaufeu: "🐉",
-                    carapuce: "🐢", carabaffe: "🐢", tortank: "🐢",
-                    bulbizarre: "🌿", herbizarre: "🌿", florizarre: "🌸",
-                    pikachu: "⚡", raichu: "⚡", mewtwo: "🔮",
-                    dracolosse: "🐲", ronflex: "😴", osselait: "💀",
-                    ossatueur: "💀", abra: "🔮", kadabra: "🔮",
-                  }[p.speciesId] || "❓"}
-                </span>
-                <div className="flex flex-col flex-1">
-                  <span className="text-white">{p.name} <span className="text-gray-500">Nv.{p.level}</span></span>
-                  <div className="w-full bg-gray-900 rounded" style={{ height: 4 }}>
-                    <div
-                      style={{
-                        width: `${Math.max(0, Math.floor(p.hp / p.maxHp * 100))}%`,
-                        height: "100%",
-                        background: p.hp / p.maxHp > 0.5 ? "#4caf50" : p.hp / p.maxHp > 0.2 ? "#ff9800" : "#f44336",
-                        borderRadius: 2
-                      }}
-                    />
+          <div className="flex flex-col gap-1 overflow-y-auto" style={{ maxHeight: 150 }}>
+            {trainer.team.map((p, i) => {
+              const hpPct = p.hp / p.maxHp;
+              const hpColor = hpPct > 0.5 ? "#44cc44" : hpPct > 0.2 ? "#ffaa00" : "#ff3333";
+              return (
+                <div key={i} className="flex items-center gap-1" style={{
+                  background: "#0a1a0a", border: "1px solid #1a3a1a",
+                  borderRadius: 4, padding: "4px 6px"
+                }}>
+                  <PokemonPixelSprite pokemon={p} size={28} />
+                  <div className="flex flex-col flex-1 min-w-0">
+                    <span style={{ fontSize: 6, color: "#fff" }}>{p.name} <span style={{ color: "#888" }}>Nv.{p.level}</span></span>
+                    <div style={{ height: 4, background: "#1a1a1a", borderRadius: 2, marginTop: 2 }}>
+                      <div style={{
+                        width: `${Math.max(0, hpPct * 100)}%`, height: "100%",
+                        background: `linear-gradient(90deg, ${hpColor}aa, ${hpColor})`,
+                        borderRadius: 2, transition: "width 0.3s"
+                      }} />
+                    </div>
                   </div>
+                  <span style={{ fontSize: 5, color: "#668866" }}>{p.hp}/{p.maxHp}</span>
                 </div>
-                <span className="text-gray-400">{p.hp}/{p.maxHp}</span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
         {/* Joueurs connectés */}
-        <div className="poke-panel p-2 flex flex-col gap-1">
-          <p className="text-[7px] text-gray-400 mb-1">Dresseurs ({connectedPlayers.length})</p>
+        <div style={{ background: "#0a1a0a", border: "1px solid #1a3a1a", borderRadius: 4, padding: 8 }}>
+          <p style={{ fontSize: 6, color: "#668866", marginBottom: 4 }}>
+            🟢 {connectedPlayers.length} dresseur{connectedPlayers.length > 1 ? "s" : ""} en ligne
+          </p>
           {connectedPlayers.map((p, i) => (
-            <div key={i} className="flex items-center gap-1 text-[7px]">
-              <span className="w-2 h-2 rounded-full bg-green-400 inline-block" />
-              <span className="text-gray-300 truncate">{p.name}</span>
-              <span className="text-gray-500 ml-auto">Nv.{p.level}</span>
+            <div key={i} className="flex items-center gap-1" style={{ marginBottom: 3 }}>
+              <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#44ff44", boxShadow: "0 0 4px #44ff44" }} />
+              <span style={{ fontSize: 6, color: "#aaccaa", flex: 1 }} className="truncate">{p.name}</span>
+              <span style={{ fontSize: 5, color: "#557755" }}>Nv.{p.level}</span>
             </div>
           ))}
         </div>
 
         {/* Chat */}
-        <div className="poke-panel p-2 flex flex-col gap-1 flex-1">
-          <p className="text-[7px] text-gray-400 mb-1">Chat</p>
-          <div className="overflow-y-auto flex-1 flex flex-col gap-1 max-h-32">
+        <div className="flex flex-col gap-1 flex-1" style={{ background: "#060e06", border: "1px solid #1a3a1a", borderRadius: 4, padding: 8, minHeight: 0 }}>
+          <p style={{ fontSize: 6, color: "#668866", marginBottom: 4 }}>💬 Chat</p>
+          <div className="overflow-y-auto flex-1 flex flex-col gap-1" style={{ maxHeight: 110 }}>
             {chatMessages.map((m, i) => (
-              <p key={i} className="text-[6px]">
-                <span className="text-poke-yellow">{m.name}: </span>
-                <span className="text-gray-300">{m.msg}</span>
+              <p key={i} style={{ fontSize: 6 }}>
+                <span style={{ color: "#f0c040" }}>{m.name}: </span>
+                <span style={{ color: "#99bb99" }}>{m.msg}</span>
               </p>
             ))}
             <div ref={chatEndRef} />
           </div>
-          <form onSubmit={sendChat} className="flex gap-1">
+          <form onSubmit={sendChat} className="flex gap-1" style={{ marginTop: 4 }}>
             <input
-              className="poke-input text-[7px] py-1 px-2 flex-1"
+              className="poke-input flex-1"
+              style={{ fontSize: 7, padding: "4px 8px" }}
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
               placeholder="Message..."
               maxLength={100}
             />
-            <button className="poke-btn text-[7px] py-1 px-2">→</button>
+            <button className="poke-btn" style={{ fontSize: 8, padding: "4px 8px" }}>→</button>
           </form>
         </div>
 
-        <button className="poke-btn text-[7px] py-1" onClick={onLogout}>Quitter</button>
+        <button className="poke-btn text-[7px] py-1" style={{ borderColor: "#552222", color: "#ff6666" }} onClick={onLogout}>
+          ⏻ Quitter
+        </button>
       </div>
     </div>
   );
 }
 
 function HPBar({ current, max }) {
-  const pct = Math.max(0, Math.min(100, Math.floor((current / max) * 100)));
-  const color = pct > 50 ? "#4caf50" : pct > 20 ? "#ff9800" : "#f44336";
+  const pct = Math.max(0, Math.min(100, (current / max) * 100));
+  const isCrit = pct <= 20;
+  const gradient = pct > 50
+    ? "linear-gradient(90deg, #228822, #44ff44)"
+    : pct > 20
+    ? "linear-gradient(90deg, #cc6600, #ffaa00)"
+    : "linear-gradient(90deg, #880000, #ff3333)";
   return (
     <div className="flex flex-col gap-0.5">
-      <div className="flex justify-between text-[6px] text-gray-400">
+      <div className="flex justify-between" style={{ fontSize: 5, color: "#668866" }}>
         <span>HP</span>
-        <span>{current}/{max}</span>
+        <span style={{ color: isCrit ? "#ff4444" : "#668866" }}>{current}/{max}</span>
       </div>
-      <div className="w-full bg-gray-900 rounded" style={{ height: 8 }}>
-        <div style={{ width: `${pct}%`, height: "100%", background: color, borderRadius: 2, transition: "width 0.3s" }} />
+      <div style={{ height: 7, background: "#0a0a0a", borderRadius: 3, border: "1px solid #1a3a1a", overflow: "hidden" }}>
+        <div style={{
+          width: `${pct}%`, height: "100%",
+          background: gradient, borderRadius: 3,
+          transition: "width 0.4s",
+          boxShadow: isCrit ? "0 0 6px #ff3333" : "none",
+          animation: isCrit ? "hp-critical 0.8s infinite" : "none"
+        }} />
       </div>
     </div>
   );
 }
 
 function XPBar({ current, max }) {
-  const pct = Math.max(0, Math.min(100, Math.floor((current / max) * 100)));
+  const pct = Math.max(0, Math.min(100, (current / max) * 100));
   return (
     <div className="flex flex-col gap-0.5">
-      <div className="text-[5px] text-gray-500">XP</div>
-      <div className="w-full bg-gray-900 rounded" style={{ height: 4 }}>
-        <div style={{ width: `${pct}%`, height: "100%", background: "#3498db", borderRadius: 2, transition: "width 0.3s" }} />
+      <div style={{ fontSize: 5, color: "#446688" }}>XP</div>
+      <div style={{ height: 4, background: "#0a0a0a", borderRadius: 2, border: "1px solid #1a2a3a", overflow: "hidden" }}>
+        <div style={{
+          width: `${pct}%`, height: "100%",
+          background: "linear-gradient(90deg, #1155aa, #44aaff)",
+          borderRadius: 2, transition: "width 0.5s"
+        }} />
       </div>
     </div>
   );

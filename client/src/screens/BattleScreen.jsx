@@ -97,9 +97,18 @@ export default function BattleScreen({ playerPokemon, wildPokemon, onBattleEnd }
   const [busy, setBusy] = useState(false);
   const [shakeWild, setShakeWild] = useState(false);
   const [shakePlayer, setShakePlayer] = useState(false);
-  const [phase, setPhase] = useState("fight"); // fight | result
-  const [result, setResult] = useState(null); // win | lose | fled
+  const [phase, setPhase] = useState("fight");
+  const [result, setResult] = useState(null);
+  const [flashColor, setFlashColor] = useState(null); // flash plein écran
+  const [attackFx, setAttackFx] = useState(null); // { side, color }
+  const [evolving, setEvolving] = useState(false);
   const logRef = useRef(null);
+
+  // Flash d'entrée
+  useEffect(() => {
+    setFlashColor("#ffffff");
+    setTimeout(() => setFlashColor(null), 400);
+  }, []);
 
   useEffect(() => {
     logRef.current?.scrollTo({ top: logRef.current.scrollHeight, behavior: "smooth" });
@@ -109,9 +118,20 @@ export default function BattleScreen({ playerPokemon, wildPokemon, onBattleEnd }
     setLog((prev) => [...prev.slice(-30), ...newLogs]);
   }
 
+  function flashAttack(side, color) {
+    setAttackFx({ side, color });
+    setTimeout(() => setAttackFx(null), 350);
+  }
+
   function useMove(moveId) {
     if (busy || phase !== "fight") return;
     setBusy(true);
+
+    const move = player.moves.find(m => m.id === moveId);
+    const moveColor = TYPE_COLORS[move?.type] || "#ffffff";
+
+    // Flash attaque joueur
+    flashAttack("wild", moveColor);
 
     // --- Tour joueur ---
     const { logs, newPlayer: p1, newWild: w1, result: res1 } = executePlayerMove(moveId, player, wild);
@@ -122,7 +142,17 @@ export default function BattleScreen({ playerPokemon, wildPokemon, onBattleEnd }
     setWild(w1);
 
     if (res1 === "win") {
-      setTimeout(() => { setResult("win"); setPhase("result"); setBusy(false); }, 1200);
+      // Vérifier évolution
+      const evolved = p1.name !== playerPokemon.name;
+      if (evolved) {
+        setEvolving(true);
+        setTimeout(() => {
+          setEvolving(false);
+          setResult("win"); setPhase("result"); setBusy(false);
+        }, 2500);
+      } else {
+        setTimeout(() => { setResult("win"); setPhase("result"); setBusy(false); }, 1200);
+      }
       return;
     }
 
@@ -131,8 +161,12 @@ export default function BattleScreen({ playerPokemon, wildPokemon, onBattleEnd }
       addLogs([`⏳ ${w1.name} prépare son attaque...`]);
     }, 900);
 
-    // --- Tour ennemi ---
+    // --- Flash + Tour ennemi ---
     setTimeout(() => {
+      const wildMove = w1.moves[0];
+      const wildColor = TYPE_COLORS[wildMove?.type] || "#ff4444";
+      flashAttack("player", wildColor);
+
       const { logs: eLogs, newPlayer: p2, newWild: w2, result: res2 } = executeEnemyMove(p1, w1);
       addLogs(eLogs);
       setShakePlayer(true);
@@ -140,7 +174,9 @@ export default function BattleScreen({ playerPokemon, wildPokemon, onBattleEnd }
       setPlayer(p2);
       setWild(w2);
       if (res2 === "lose") {
-        setTimeout(() => { setResult("lose"); setPhase("result"); setBusy(false); }, 1000);
+        setFlashColor("#440000");
+        setTimeout(() => setFlashColor(null), 600);
+        setTimeout(() => { setResult("lose"); setPhase("result"); setBusy(false); }, 1200);
       } else {
         setBusy(false);
       }
@@ -172,6 +208,27 @@ export default function BattleScreen({ playerPokemon, wildPokemon, onBattleEnd }
         background: "linear-gradient(180deg, #0a1628 0%, #1a2a4a 40%, #0d2010 100%)",
       }}
     >
+      {/* Flash plein écran */}
+      {flashColor && (
+        <div className="absolute inset-0 z-50 pointer-events-none" style={{
+          background: flashColor, opacity: 0.55,
+          animation: "encounter-flash 0.4s ease-out forwards"
+        }} />
+      )}
+
+      {/* Écran évolution */}
+      {evolving && (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center" style={{
+          background: "radial-gradient(circle, #ffffff 0%, #ffff88 40%, #ff8800 100%)",
+          animation: "level-up 0.6s infinite"
+        }}>
+          <div style={{ fontSize: 40, animation: "spin 0.5s linear infinite" }}>✨</div>
+          <p style={{ fontFamily: "'Press Start 2P', monospace", fontSize: 14, color: "#222", marginTop: 16 }}>
+            Évolution !
+          </p>
+        </div>
+      )}
+
       {/* Terrain de combat */}
       <div className="flex-1 relative overflow-hidden" style={{ minHeight: 230 }}>
         {/* Fond ciel */}
@@ -190,6 +247,21 @@ export default function BattleScreen({ playerPokemon, wildPokemon, onBattleEnd }
           background: "radial-gradient(ellipse, #6a9a4a 60%, transparent 100%)",
           borderRadius: "50%"
         }} />
+
+        {/* Flash attaque sur ennemi */}
+        {attackFx?.side === "wild" && (
+          <div className="absolute inset-0 pointer-events-none z-20" style={{
+            background: `radial-gradient(circle at 70% 30%, ${attackFx.color}88, transparent 60%)`,
+            animation: "encounter-flash 0.35s ease-out forwards"
+          }} />
+        )}
+        {/* Flash attaque sur joueur */}
+        {attackFx?.side === "player" && (
+          <div className="absolute inset-0 pointer-events-none z-20" style={{
+            background: `radial-gradient(circle at 30% 70%, ${attackFx.color}88, transparent 60%)`,
+            animation: "encounter-flash 0.35s ease-out forwards"
+          }} />
+        )}
 
         {/* Ennemi (droite, en haut) */}
         <div className="absolute flex flex-col items-end gap-1" style={{ right: 24, top: 16 }}>
