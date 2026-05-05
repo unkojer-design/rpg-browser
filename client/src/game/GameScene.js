@@ -181,6 +181,7 @@ export class GameScene extends Phaser.Scene {
     });
 
     this.mobs.set(id, mobData);
+    mobData.triggerZone = container;
     gfx.destroy();
   }
 
@@ -277,9 +278,9 @@ export class GameScene extends Phaser.Scene {
 
   _setupInput() {
     this.inputKeys = this.input.keyboard.addKeys({
-      up: Phaser.Input.Keyboard.KeyCodes.W,
+      up: Phaser.Input.Keyboard.KeyCodes.Z,
       down: Phaser.Input.Keyboard.KeyCodes.S,
-      left: Phaser.Input.Keyboard.KeyCodes.A,
+      left: Phaser.Input.Keyboard.KeyCodes.Q,
       right: Phaser.Input.Keyboard.KeyCodes.D,
       upArrow: Phaser.Input.Keyboard.KeyCodes.UP,
       downArrow: Phaser.Input.Keyboard.KeyCodes.DOWN,
@@ -295,15 +296,20 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  _startCombat(mobData) {
+  _startCombat(mob) {
     if (this.onCombatStart) {
-      this.onCombatStart(mobData);
+      this.onCombatStart(mob);
     }
+  }
+
+  endCombat() {
+    this._inCombat = false;
   }
 
   update(time, delta) {
     this._handleMovement(delta);
     this._syncMobVisuals();
+    this._checkMobCollisions();
 
     this.saveTimer += delta;
     if (this.saveTimer > 5000) {
@@ -336,6 +342,22 @@ export class GameScene extends Phaser.Scene {
     if (vx !== 0 || vy !== 0) {
       this.socket.emit("move", { x: this.playerBody.x, y: this.playerBody.y });
     }
+  }
+
+  _checkMobCollisions() {
+    if (!this.playerBody || this._inCombat) return;
+    const px = this.playerBody.x;
+    const py = this.playerBody.y;
+    this.mobs.forEach((mob) => {
+      if (!mob.alive) return;
+      const dx = px - mob.body.x;
+      const dy = py - mob.body.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 28) {
+        this._inCombat = true;
+        this._startCombat(mob);
+      }
+    });
   }
 
   _syncMobVisuals() {

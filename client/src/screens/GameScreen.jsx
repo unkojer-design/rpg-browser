@@ -155,6 +155,7 @@ export default function GameScreen({ token, character: initChar, onLogout }) {
       if (leveled) showNotif(`🎉 Niveau ${newChar.level} !`, "success");
       setTimeout(() => {
         setCombat(null);
+        sceneRef.current?.endCombat?.();
         saveCharacter(charRef.current);
       }, 1200);
       return;
@@ -185,6 +186,7 @@ export default function GameScreen({ token, character: initChar, onLogout }) {
           updateChar({ hp: reviveHp });
           saveCharacter({ ...charRef.current, hp: reviveHp });
           setCombat(null);
+          sceneRef.current?.endCombat?.();
           showNotif("Vous êtes mort... ressuscité avec 30% HP.", "error");
         }, 1500);
       }
@@ -202,7 +204,7 @@ export default function GameScreen({ token, character: initChar, onLogout }) {
 
   function flee() {
     addLog("🏃 Vous fuyez le combat !");
-    setTimeout(() => setCombat(null), 500);
+    setTimeout(() => { setCombat(null); sceneRef.current?.endCombat?.(); }, 500);
   }
 
   const skills = SKILLS[char.class] || [];
